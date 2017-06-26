@@ -1,0 +1,10 @@
+---
+- name: Update project
+  hosts: all
+  become: decide
+  tasks:
+  - name: update project dependencies
+    command: composer install chdir={{project_dir}}
+  - name: running migrations
+    command: ./yii migrate chdir={{project_dir}}
+

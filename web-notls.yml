@@ -1,0 +1,84 @@
+---
+- name: Deploy machine
+  hosts: all
+  become: true
+  vars:
+  tasks:
+  - name: install apache
+    apt: name=apache2 update_cache=yes
+
+  - name: install git
+    apt: name=git update_cache=yes
+
+  - name: update php repository
+    apt_repository: repo='ppa:ondrej/php'
+
+  - name: install php5.6 and its dependencies
+    apt: name={{item}} update_cache=yes state=present
+    with_items:
+    - php5.6
+    - php5.6-xml
+    - php5.6-zip
+    - php5.6-mbstring
+    - php5.6-gd
+    - php5.6-pgsql
+
+  - name: copy test site config to apache sites
+    copy: src=files/test.conf dest=/etc/apache2/sites-available
+
+  - name: enabling site configuration
+    file: src=/etc/apache2/sites-available/test.conf dest=/etc/apache2/sites-enabled/test.conf state=link
+
+  - name: disable default apache site
+    command: a2dissite 000-default
+
+  - name: enable test apache site
+    command: a2ensite test.conf
+
+  - name: enable rewrite module on apache
+    command: a2enmod rewrite
+
+  - name: download composer
+    get_url: url=https://getcomposer.org/download/1.4.2/composer.phar dest=/usr/local/bin/composer
+
+  - name: set composer executable
+    file: path=/usr/local/bin/composer mode=0755 state=touch
+
+  - name: install composer asset plugin
+    command: composer global require fxp/composer-asset-plugin:1.3.1
+    become_user: vagrant
+
+  - name: update postgresql repository
+    apt_repository: repo='deb https://apt.postgresql.org/pub/repos/apt/ trusty-pgdg main'
+
+  - name: add postgresql repository key
+    apt_key: url=https://www.postgresql.org/media/keys/ACCC4CF8.asc state=present
+
+  - name: install postgresql-9.6
+    apt: name={{item}} update_cache=yes
+    with_items:
+     - postgresql-9.6
+     - python-psycopg2
+
+  - name: creating db user
+    postgresql_user: name={{db_user}} password={{db_password}}
+    become_user: postgres
+
+  - name: creating {{db_name}} database
+    postgresql_db: name={{db_name}} owner={{db_user}}
+    become_user: postgres
+
+  - name: install phppgadmin
+    apt: name=phppgadmin
+
+  - name: enable phppadmin on apache
+    lineinfile: path=/etc/apache2/apache2.conf line='Include /etc/apache2/conf.d/phppgadmin'
+
+  - name: enable permissions on phppgadmin
+    lineinfile: path=/etc/apache2/conf.d/phppgadmin regexp='^deny from all' line='allow from all' backrefs=yes
+
+  - name: make yii command executable
+    file: path={{project_dir}}/yii mode=0755 state=touch
+
+  - name: restart apache
+    service: name=apache2 state=restarted

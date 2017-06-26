@@ -1,0 +1,9 @@
+[vagrant]
+local_dev_machine ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222 ansible_ssh_user=vagrant ansible_ssh_private_key_file=.vagrant/machines/default/virtualbox/private_key
+[3decide]
+nos_eco ansible_ssh_host=192.168.1.13 ansible_ssh_user=decide ansible_ssh_private_key_file=/home/carlos/.ssh/id_rsa
+
+[vagrant:vars]
+project_dir=/vagrant/basic
+[3decide:vars]
+project_dir=/var/www/ext_nos_eco_back/ext-nos-eco-backoffice
